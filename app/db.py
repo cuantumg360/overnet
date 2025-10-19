@@ -1,52 +1,47 @@
 # app/db.py
 import os
-import psycopg2
-from dotenv import load_dotenv
+from contextlib import contextmanager
+import psycopg  # psycopg 3
 
-# 1. Cargar .env (busca en raíz del proyecto y en /app)
-load_dotenv()
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"), override=False)
-
-# 2. Obtener DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL no definida")
 
-# 3. Configuración de conexión segura
-CONNECT_KW = dict(
-    sslmode="require",
-    keepalives=1,
-    keepalives_idle=30,
-    keepalives_interval=10,
-    keepalives_count=5,
-    connect_timeout=10,
-)
+# --- helpers de conexión -----------------------------------------------
 
-# 4. Función interna para abrir conexión
+@contextmanager
 def _conn():
-    return psycopg2.connect(DATABASE_URL, **CONNECT_KW)
+    # autocommit para no gestionar commits manuales en utilidades simples
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        yield conn
 
-# 5. Query que devuelve un solo resultado
+@contextmanager
+def _cursor():
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            yield cur
+
+# --- API mínima que usa el resto de módulos -----------------------------
+
 def query_one(sql, params=()):
-    with _conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchone()
+    """Devuelve una sola fila o None."""
+    with _cursor() as cur:
+        cur.execute(sql, params)
+        row = cur.fetchone()
+        return row
 
-# 6. Ejecutar (insert/update/delete) o devolver resultados
-def execute(sql, params=(), fetch=None):
-    with _conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            if fetch == "one":
-                return cur.fetchone()
-            if fetch == "all":
-                return cur.fetchall()
-            return None
+def execute(sql, params=()):
+    """Ejecuta INSERT/UPDATE/DELETE. Devuelve filas afectadas si aplica."""
+    with _cursor() as cur:
+        cur.execute(sql, params)
+        # en autocommit no hace falta commit; rowcount disponible
+        return cur.rowcount
 
-# 7. Probar conexión
+# útil para probar en consola/render
 def test_connection():
-    with _conn() as conn:
-        with conn.cursor() as cur:
+    try:
+        with _cursor() as cur:
             cur.execute("SELECT 1")
-            print("✅ Conexion OK")
+            return True
+    except psycopg.Error:
+        return False
