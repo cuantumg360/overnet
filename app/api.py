@@ -1,4 +1,3 @@
-# app/api.py
 from flask import Blueprint, request, jsonify
 from .auth import require_api_key
 
@@ -8,4 +7,4 @@ bp = Blueprint("api", __name__)
 @require_api_key
 def echo():
     data = request.get_json(silent=True) or {}
-    return jsonify(ok=True, echo=data.get("msg")), 200
+    return jsonify(ok=True, msg=data.get("msg", "hola")), 200

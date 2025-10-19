@@ -1,36 +1,27 @@
 <!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Overnet Router</title>
-</head>
-<body>
-  <h1>Overnet.AI — Router mínimo</h1>
-  <form id="f">
-    <label>Tarea:
-      <select name="task">
-        <option value="generate">generate</option>
-        <option value="sentiment">sentiment</option>
-      </select>
-    </label>
-    <br>
-    <textarea name="text" rows="6" cols="60" placeholder="Escribe algo..."></textarea>
-    <br>
-    <button type="submit">Ejecutar</button>
-  </form>
-
-  <h2>Salida</h2>
-  <pre id="out"></pre>
-
-  <script>
-    const f = document.getElementById('f');
-    const out = document.getElementById('out');
-    f.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const data = new FormData(f);
-      const r = await fetch('/route', {method:'POST', body:data});
-      out.textContent = JSON.stringify(await r.json(), null, 2);
-    });
-  </script>
-</body>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Overnet</title>
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;background:#0b0f17;color:#e7ecf3}
+      .card{max-width:720px;padding:32px;border:1px solid #1f2a3a;border-radius:14px;background:#0f1522}
+      h1{margin:0 0 8px}
+      code{background:#0b1220;padding:2px 6px;border-radius:6px}
+      a{color:#8bd3ff}
+      .row{margin-top:12px}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Overnet API</h1>
+      <p>Estado: <strong>OK</strong>. Endpoints básicos:</p>
+      <div class="row"><code>GET /health</code></div>
+      <div class="row"><code>POST /auth/signup</code> → crea usuario y API key</div>
+      <div class="row"><code>POST /auth/login</code> → devuelve API key</div>
+      <div class="row"><code>POST /echo</code> con <code>X-API-Key</code></div>
+      <p style="margin-top:16px">Repositorio <a href="#">Git</a> • Desplegado en Render</p>
+    </div>
+  </body>
 </html>
