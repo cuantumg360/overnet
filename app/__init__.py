@@ -6,15 +6,13 @@ from .api import bp as api_bp
 
 SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS users(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
-CREATE TABLE IF NOT EXISTS api_keys (
+CREATE TABLE IF NOT EXISTS api_keys(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   key TEXT UNIQUE NOT NULL,
@@ -24,10 +22,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
 """
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="../templates", static_folder="../static")
     CORS(app)
-
-    # init DB idempotente
     execute(SCHEMA_SQL)
 
     @app.get("/")
@@ -39,6 +35,5 @@ def create_app():
         return jsonify(ok=True), 200
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(api_bp)  # /echo
-
+    app.register_blueprint(api_bp)
     return app

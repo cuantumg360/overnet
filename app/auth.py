@@ -11,10 +11,7 @@ def require_api_key(f):
         key = request.headers.get("X-API-Key")
         if not key:
             return jsonify(ok=False, error="API key requerida"), 401
-        row = query_one(
-            "SELECT user_id FROM api_keys WHERE key=%s AND active=TRUE LIMIT 1",
-            (key,)
-        )
+        row = query_one("SELECT user_id FROM api_keys WHERE key=%s AND active=TRUE LIMIT 1", (key,))
         if not row:
             return jsonify(ok=False, error="API key inválida"), 401
         return f(*args, **kwargs)
@@ -46,8 +43,8 @@ def signup():
         VALUES ((SELECT id FROM users WHERE email=%s LIMIT 1), %s, TRUE)
     """, (email, api_key))
 
-    user_id = str(query_one("SELECT id FROM users WHERE email=%s", (email,))[0])
-    return jsonify(ok=True, api_key=api_key, user_id=user_id), 201
+    user_id = query_one("SELECT id FROM users WHERE email=%s", (email,))[0]
+    return jsonify(ok=True, api_key=api_key, user_id=str(user_id)), 201
 
 @bp.post("/login")
 def login():
@@ -66,9 +63,8 @@ def login():
         return jsonify(ok=False, error="Credenciales inválidas"), 401
 
     k = query_one("SELECT key FROM api_keys WHERE user_id=%s AND active=TRUE LIMIT 1", (user_id,))
-    if k:
-        api_key = k[0]
-    else:
+    api_key = k[0] if k else None
+    if not api_key:
         api_key = secrets.token_urlsafe(32)
         execute("INSERT INTO api_keys(user_id, key, active) VALUES (%s, %s, TRUE)", (user_id, api_key))
 
