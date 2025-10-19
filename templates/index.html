@@ -1,0 +1,76 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Overnet</title>
+<style>
+body{margin:0;background:#0a0a0a;color:#fff;font-family:system-ui,Arial}
+.wrap{max-width:880px;margin:0 auto;padding:32px}
+.card{border:1px solid #222;border-radius:12px;padding:16px;margin:12px 0;background:#0f0f0f}
+input,button{font-size:16px}
+input{width:100%;padding:10px;border:1px solid #222;border-radius:8px;background:#131313;color:#fff}
+button{padding:10px 14px;border:0;border-radius:8px;background:#fff;color:#000;cursor:pointer}
+pre{background:#0b0b0b;border:1px solid #222;border-radius:8px;padding:12px;overflow:auto}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1 1 280px}
+.muted{opacity:.7;font-size:14px}h1{font-size:34px;margin:0 0 6px}h2{margin:0 0 10px}
+</style></head><body>
+<div class="wrap">
+  <h1>Overnet</h1>
+  <div class="muted">Una sola conexión. Todas las inteligencias.</div>
+
+  <div class="card">
+    <h2>Crear cuenta</h2>
+    <div class="row">
+      <div><input id="suEmail" placeholder="email"></div>
+      <div><input id="suPwd" placeholder="password" type="password"></div>
+    </div>
+    <div style="margin-top:10px"><button id="btnSignup">Signup</button></div>
+    <div class="muted" style="margin-top:8px">Tu API Key: <span id="apiKey">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Login</h2>
+    <div class="row">
+      <div><input id="liEmail" placeholder="email"></div>
+      <div><input id="liPwd" placeholder="password" type="password"></div>
+    </div>
+    <div style="margin-top:10px"><button id="btnLogin">Login</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Probar /echo (protegido)</h2>
+    <div class="row"><div><input id="echoMsg" placeholder="mensaje" value="hola"></div></div>
+    <div style="margin-top:10px"><button id="btnEcho">Enviar</button></div>
+  </div>
+
+  <div class="card"><h2>Salida</h2><pre id="out">Esperando…</pre></div>
+</div>
+
+<script>
+const out = document.getElementById('out');
+const apiKeySpan = document.getElementById('apiKey');
+let apiKey = "";
+function show(o){ out.textContent = JSON.stringify(o,null,2); }
+async function post(path, body, headers={}){
+  const r = await fetch(path,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body||{})});
+  let json; try{ json=await r.json(); }catch{ json={status:r.status}; }
+  return json;
+}
+document.getElementById('btnSignup').onclick = async ()=>{
+  const email = document.getElementById('suEmail').value.trim();
+  const password = document.getElementById('suPwd').value;
+  const res = await post('/auth/signup',{email,password});
+  show(res); if(res.api_key){ apiKey=res.api_key; apiKeySpan.textContent=apiKey; }
+};
+document.getElementById('btnLogin').onclick = async ()=>{
+  const email = document.getElementById('liEmail').value.trim();
+  const password = document.getElementById('liPwd').value;
+  const res = await post('/auth/login',{email,password});
+  show(res); if(res.api_key){ apiKey=res.api_key; apiKeySpan.textContent=apiKey; }
+};
+document.getElementById('btnEcho').onclick = async ()=>{
+  if(!apiKey){ show({error:"Primero haz signup o login"}); return; }
+  const msg = document.getElementById('echoMsg').value;
+  const res = await post('/echo',{msg},{'X-API-Key':apiKey});
+  show(res);
+};
+</script>
+</body></html>
