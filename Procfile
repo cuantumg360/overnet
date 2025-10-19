@@ -1,1 +1,1 @@
-web: uvicorn app.main:app --host 0.0.0.0 --port 10000
+web: gunicorn -w 2 -b 0.0.0.0:$PORT 'main:create_app()'

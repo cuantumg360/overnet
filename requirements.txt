@@ -1,9 +1,4 @@
 ﻿Flask==3.0.3
-Flask-Cors==4.0.1
 gunicorn==21.2.0
 python-dotenv==1.0.1
-psycopg[binary]==3.1.19
 bcrypt==4.1.2
-requests==2.31.0
-typing-extensions==4.12.2
-Werkzeug==3.0.3
