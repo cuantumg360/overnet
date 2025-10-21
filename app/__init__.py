@@ -1,39 +1,16 @@
-from flask import Flask, jsonify, render_template
-from flask_cors import CORS
-from .db import execute
-from .auth import bp as auth_bp
-from .api import bp as api_bp
-
-SCHEMA_SQL = """
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE TABLE IF NOT EXISTS users(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS api_keys(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  key TEXT UNIQUE NOT NULL,
-  active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-"""
+# app/__init__.py
+from flask import Flask
+from app.router import bp as router_bp
+from app.auth import bp as auth_bp
+from app.metrics import bp as metrics_bp
 
 def create_app():
-    app = Flask(__name__, template_folder="../templates", static_folder="../static")
-    CORS(app)
-    execute(SCHEMA_SQL)
+    app = Flask(__name__, template_folder="templates", static_folder="static")
 
-    @app.get("/")
-    def landing():
-        return render_template("index.html")
+    app.register_blueprint(router_bp)                 # /
+    app.register_blueprint(auth_bp,   url_prefix="/auth")
+    app.register_blueprint(metrics_bp, url_prefix="/metrics")
 
-    @app.get("/health")
-    def health():
-        return jsonify(ok=True), 200
-
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(api_bp)
     return app
+
+app = create_app()

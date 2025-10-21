@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Overnet</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+           display:grid; place-items:center; min-height:100vh; background:#0b0f17; color:#e7ecf3; }
+    .card { width:min(720px, 92vw); background:#0e1522; border:1px solid #1f2b3a;
+            border-radius:14px; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+    h1 { margin:0 0 6px; text-align:center; }
+    .muted { opacity:.7; text-align:center; margin:0 0 18px; }
+    .row { display:flex; gap:8px; margin:10px 0; }
+    input, button { padding:10px 12px; border-radius:8px; border:1px solid #263449; background:#0b1220; color:#e7ecf3; }
+    button { background:#1e90ff; border-color:#1e90ff; cursor:pointer; }
+    code { background:#09111d; border:1px solid #223049; padding:2px 6px; border-radius:6px; }
+    small { opacity:.7; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Overnet</h1>
+    <p class="muted">Una sola conexión. Todas las inteligencias.</p>
+
+    <section>
+      <h3>Endpoints básicos</h3>
+      <div class="row"><small>GET <code>/health</code> → <code>{"ok":true}</code></small></div>
+      <div class="row"><small>POST <code>/auth/signup</code> → devuelve <code>API key</code></small></div>
+      <div class="row"><small>POST <code>/auth/login</code> → devuelve <code>API key</code></small></div>
+      <div class="row"><small>POST <code>/echo</code> (con <code>X-API-Key</code>)</small></div>
+    </section>
+
+    <hr style="border-color:#223049; margin:16px 0">
+
+    <section>
+      <h3>Crear cuenta</h3>
+      <form id="fSignup" class="row" onsubmit="return false;">
+        <input id="sEmail" placeholder="email" />
+        <input id="sPass"  placeholder="password" type="password" />
+        <button onclick="signup()">Signup</button>
+      </form>
+      <small id="signupOut"></small>
+    </section>
+
+    <section>
+      <h3>Login</h3>
+      <form id="fLogin" class="row" onsubmit="return false;">
+        <input id="lEmail" placeholder="email" />
+        <input id="lPass"  placeholder="password" type="password" />
+        <button onclick="login()">Login</button>
+      </form>
+      <small id="loginOut"></small>
+    </section>
+
+    <section>
+      <h3>Probar /echo (protegido)</h3>
+      <form id="fEcho" class="row" onsubmit="return false;">
+        <input id="echoMsg" placeholder="hola" />
+        <button onclick="echo()">Enviar</button>
+      </form>
+      <small id="echoOut"></small>
+    </section>
+  </div>
+
+<script>
+let API_KEY = null;
+
+async function signup(){
+  const email = document.getElementById('sEmail').value;
+  const password = document.getElementById('sPass').value;
+  const r = await fetch('/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const j = await r.json(); document.getElementById('signupOut').textContent = JSON.stringify(j);
+  if(j.api_key) API_KEY = j.api_key;
+}
+
+async function login(){
+  const email = document.getElementById('lEmail').value;
+  const password = document.getElementById('lPass').value;
+  const r = await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const j = await r.json(); document.getElementById('loginOut').textContent = JSON.stringify(j);
+  if(j.api_key) API_KEY = j.api_key;
+}
+
+async function echo(){
+  const msg = document.getElementById('echoMsg').value;
+  const r = await fetch('/echo',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY||''},body:JSON.stringify({msg})});
+  const j = await r.json(); document.getElementById('echoOut').textContent = JSON.stringify(j);
+}
+</script>
+</body>
+</html>

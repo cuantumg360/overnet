@@ -2,127 +2,60 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Overnet</title>
   <style>
-    :root{color-scheme:dark}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0f17;color:#e7ecf3;font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .card{width:min(720px,92vw);background:#0e1522;padding:24px 28px;border:1px solid #1f2a3b;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    h1{margin:0 0 8px;font-weight:700;text-align:center}
-    .muted{color:#9cb3c9;text-align:center;margin-bottom:20px;font-size:14px}
-    .row{display:flex;gap:8px;margin:10px 0}
-    input{flex:1;padding:10px 12px;border:1px solid #243147;border-radius:8px;background:#0b1220;color:#e7ecf3}
-    button{padding:10px 14px;border:0;border-radius:8px;background:#1d95ff;color:white;cursor:pointer}
-    button:disabled{opacity:.6;cursor:default}
-    .mini{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0b1220;border:1px solid #243147;border-radius:6px;padding:8px;color:#b7c9dc;word-break:break-all}
-    .api{margin-top:6px}
-    .endpoints{border:1px dashed #2a3a56;border-radius:12px;padding:10px 12px;margin-bottom:14px;color:#9cb3c9;font-size:13px}
-    .tag{font:11px ui-monospace;background:#0b1220;border:1px solid #243147;border-radius:6px;padding:2px 6px;margin-right:6px;display:inline-block}
-    .hr{height:1px;background:#1f2a3b;margin:16px 0}
+    body{margin:0;background:#0b0f17;color:#e7ecf3;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .card{max-width:720px;margin:6vh auto;padding:24px;background:#0e1522;border:1px solid #1f2a3a;border-radius:16px}
+    h1{margin:0 0 8px 0;text-align:center}
+    .row{display:flex;gap:12px;margin:10px 0}
+    input,button{padding:10px 12px;border-radius:8px;border:1px solid #27384f;background:#0b1220;color:#e7ecf3}
+    button{background:#1a6fff;border-color:#1a6fff;cursor:pointer}
+    code{background:#0b1220;padding:2px 6px;border-radius:6px;border:1px solid #1f2a3a}
+    .muted{opacity:.7;font-size:.9em}
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Overnet</h1>
-    <div class="muted">Una sola conexión. Todas las inteligencias.</div>
+    <p class="muted" style="text-align:center">Una sola conexión. Todas las inteligencias.</p>
 
-    <div class="endpoints">
-      <span class="tag">GET /health</span>
-      <span class="tag">POST /auth/signup → devuelve API key</span>
-      <span class="tag">POST /auth/login → devuelve API key</span>
-      <span class="tag">POST /echo (X-API-Key)</span>
-    </div>
+    <h3>Endpoints básicos</h3>
+    <div class="row"><code>GET /health</code> → <code>{"ok": true}</code></div>
+    <div class="row"><code>POST /auth/signup</code> → devuelve <code>API key</code></div>
+    <div class="row"><code>POST /auth/login</code> → devuelve <code>API key</code></div>
+    <div class="row"><code>POST /echo</code> (con <code>X-API-Key</code>)</div>
 
-    <div>
-      <div style="font-weight:600;margin-top:4px">Crear cuenta</div>
-      <div class="row">
-        <input id="su_email" placeholder="email" />
-        <input id="su_pass" placeholder="password" type="password" />
-        <button id="btn_signup">Signup</button>
-      </div>
-      <div id="su_out" class="mini api"></div>
-    </div>
+    <h3>Crear cuenta</h3>
+    <div class="row"><input id="su_email" placeholder="email"/><input id="su_pass" placeholder="password" type="password"/><button onclick="signup()">Signup</button></div>
+    <div class="muted">Tu API key: <span id="api_key">—</span></div>
 
-    <div class="hr"></div>
+    <h3>Login</h3>
+    <div class="row"><input id="li_email" placeholder="email"/><input id="li_pass" placeholder="password" type="password"/><button onclick="login()">Login</button></div>
 
-    <div>
-      <div style="font-weight:600;margin-top:4px">Login</div>
-      <div class="row">
-        <input id="li_email" placeholder="email" />
-        <input id="li_pass" placeholder="password" type="password" />
-        <button id="btn_login">Login</button>
-      </div>
-      <div id="li_out" class="mini api"></div>
-    </div>
-
-    <div class="hr"></div>
-
-    <div>
-      <div style="font-weight:600;margin-top:4px">Probar /echo (protegido)</div>
-      <div class="row">
-        <input id="echo_msg" placeholder="hola" />
-        <button id="btn_echo">Enviar</button>
-      </div>
-      <div id="echo_out" class="mini api"></div>
-    </div>
+    <h3>Probar /echo (protegido)</h3>
+    <div class="row"><input id="echo_msg" placeholder="hola"/><button onclick="echo()">Enviar</button></div>
   </div>
 
-  <script>
-    // Si sirves detrás de Render, deja base = "" (mismo host)
-    const base = "";
-
-    let apiKey = ""; // key activa en memoria
-
-    function setText(id, data) {
-      const el = document.getElementById(id);
-      el.textContent = typeof data === "string" ? data : JSON.stringify(data);
-    }
-
-    async function post(path, body, headers = {}) {
-      const r = await fetch(base + path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
-        body: JSON.stringify(body || {})
-      });
-      const json = await r.json().catch(() => ({}));
-      return { status: r.status, json };
-    }
-
-    document.getElementById("btn_signup").onclick = async () => {
-      const email = document.getElementById("su_email").value.trim();
-      const password = document.getElementById("su_pass").value;
-      setText("su_out", "Creando...");
-      const { status, json } = await post("/auth/signup", { email, password });
-      setText("su_out", json);
-      if (status === 200 && json.api_key) {
-        apiKey = json.api_key;
-      }
-      // limpiar inputs
-      document.getElementById("su_pass").value = "";
-    };
-
-    document.getElementById("btn_login").onclick = async () => {
-      const email = document.getElementById("li_email").value.trim();
-      const password = document.getElementById("li_pass").value;
-      setText("li_out", "Entrando...");
-      const { status, json } = await post("/auth/login", { email, password });
-      setText("li_out", json);
-      if (status === 200 && json.api_key) {
-        apiKey = json.api_key;
-      }
-      document.getElementById("li_pass").value = "";
-    };
-
-    document.getElementById("btn_echo").onclick = async () => {
-      const msg = document.getElementById("echo_msg").value;
-      if (!apiKey) {
-        setText("echo_out", "Primero haz signup o login. No hay API key.");
-        return;
-      }
-      setText("echo_out", "Enviando...");
-      const { json } = await post("/echo", { msg }, { "X-API-Key": apiKey });
-      setText("echo_out", json);
-    };
-  </script>
+<script>
+async function signup(){
+  const email = document.getElementById('su_email').value;
+  const password = document.getElementById('su_pass').value;
+  const r = await fetch('/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const j = await r.json(); document.getElementById('api_key').textContent = j.api_key || JSON.stringify(j);
+}
+async function login(){
+  const email = document.getElementById('li_email').value;
+  const password = document.getElementById('li_pass').value;
+  const r = await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const j = await r.json(); document.getElementById('api_key').textContent = j.api_key || JSON.stringify(j);
+}
+async function echo(){
+  const key = document.getElementById('api_key').textContent.trim();
+  const msg = document.getElementById('echo_msg').value || 'hola';
+  const r = await fetch('/echo',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':key},body:JSON.stringify({msg})});
+  alert(await r.text());
+}
+</script>
 </body>
 </html>
